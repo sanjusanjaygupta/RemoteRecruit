@@ -1,0 +1,52 @@
+//
+//  StateViews.swift
+//  RemoteRecruit
+//
+//  Small reusable views for the non-content UI states: loading, empty,
+//  and error. Centralising them keeps the screen code focused on layout.
+//
+
+import SwiftUI
+
+struct LoadingStateView: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+            Text("Loading jobs…")
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityIdentifier("state.loading")
+    }
+}
+
+struct EmptyStateView: View {
+    let title: String
+    let message: String
+
+    var body: some View {
+        ContentUnavailableView {
+            Label(title, systemImage: "briefcase")
+        } description: {
+            Text(message)
+        }
+        .accessibilityIdentifier("state.empty")
+    }
+}
+
+struct ErrorStateView: View {
+    let message: String
+    let retry: () -> Void
+
+    var body: some View {
+        ContentUnavailableView {
+            Label("Something went wrong", systemImage: "exclamationmark.triangle")
+        } description: {
+            Text(message)
+        } actions: {
+            Button("Try Again", action: retry)
+                .buttonStyle(.borderedProminent)
+        }
+        .accessibilityIdentifier("state.error")
+    }
+}

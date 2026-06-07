@@ -1,0 +1,37 @@
+//
+//  JobRowView.swift
+//  RemoteRecruit
+//
+//  A single row in the job list. Shows the four required fields:
+//  title, company, location, and salary range.
+//
+
+import SwiftUI
+
+struct JobRowView: View {
+    let job: Job
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(job.title)
+                .font(.headline)
+
+            Text(job.company.name)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 6) {
+                Image(systemName: "mappin.and.ellipse")
+                Text(job.locationDisplay)
+            }
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
+            Text(job.salary.display)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.tint)
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+    }
+}
