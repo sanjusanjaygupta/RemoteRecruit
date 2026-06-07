@@ -2,14 +2,13 @@
 //  LocalJobService.swift
 //  RemoteRecruit
 //
-//  The production data source. Loads jobs from a bundled JSON file
-//  (`jobs.json`) which stands in for a real "Mock API" as allowed by the
-//  brief. A small artificial delay is added so the loading state is
-//  observable in the UI; it can be set to zero in tests.
+//  Created by Sanjay Gupta on 02/06/26.
 //
 
 import Foundation
 
+// Reads jobs from the bundled jobs.json. Stands in for a real API for now -
+// swapping in a URLSession-based service later only touches AppContainer.
 final class LocalJobService: JobService {
     private let bundle: Bundle
     private let fileName: String
@@ -31,6 +30,8 @@ final class LocalJobService: JobService {
     }
 
     func fetchJobs() async throws -> [Job] {
+        // Small delay so the loading state is actually visible. Tests pass
+        // .zero to skip it.
         if artificialDelay > .zero {
             try? await Task.sleep(for: artificialDelay)
         }

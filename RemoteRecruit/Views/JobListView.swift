@@ -2,9 +2,7 @@
 //  JobListView.swift
 //  RemoteRecruit
 //
-//  The job listing screen. Renders from the view model's ViewState and
-//  hosts the search bar. Navigation pushes the detail screen, building its
-//  view model from the shared container.
+//  Created by Sanjay Gupta on 04/06/26.
 //
 
 import SwiftUI

@@ -2,8 +2,7 @@
 //  JobDetailView.swift
 //  RemoteRecruit
 //
-//  The job details screen. Shows the description, company information,
-//  salary range, and location as required by the brief.
+//  Created by Sanjay Gupta on 05/06/26.
 //
 
 import SwiftUI
@@ -50,9 +49,11 @@ struct JobDetailView: View {
                         Label(job.company.size, systemImage: "person.3")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
-                        Link(destination: URL(string: job.company.website) ?? URL(string: "https://example.com")!) {
-                            Label(job.company.website, systemImage: "link")
-                                .font(.footnote)
+                        if let url = URL(string: job.company.website) {
+                            Link(destination: url) {
+                                Label(job.company.website, systemImage: "link")
+                                    .font(.footnote)
+                            }
                         }
                     }
                 }

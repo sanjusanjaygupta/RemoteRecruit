@@ -2,14 +2,13 @@
 //  ViewState.swift
 //  RemoteRecruit
 //
-//  A small, reusable enum that models the four UI states the brief asks
-//  for: loading, loaded (with content), empty, and error. Driving the UI
-//  from a single enum keeps invalid combinations (e.g. "loading + error")
-//  unrepresentable.
+//  Created by Sanjay Gupta on 02/06/26.
 //
 
 import Foundation
 
+// One enum to drive a screen, so we can't accidentally end up in an
+// impossible combination like "loading and error at the same time".
 enum ViewState<Value: Equatable>: Equatable {
     case loading
     case loaded(Value)

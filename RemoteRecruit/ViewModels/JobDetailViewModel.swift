@@ -2,9 +2,7 @@
 //  JobDetailViewModel.swift
 //  RemoteRecruit
 //
-//  Drives the job details screen. The list already holds the full Job, so
-//  this can be seeded synchronously; it can also (re)load by id to support
-//  deep links or stale data.
+//  Created by Sanjay Gupta on 04/06/26.
 //
 
 import Foundation
@@ -16,16 +14,14 @@ final class JobDetailViewModel: ObservableObject {
     private let jobID: String
     private let service: JobService
 
-    /// Seeds the screen with a job already in hand (the common path from
-    /// the list), so the detail renders instantly.
+    // Common path: the list already has the full Job, so show it right away.
     init(job: Job, service: JobService) {
         self.jobID = job.id
         self.service = service
         self.state = .loaded(job)
     }
 
-    /// Seeds the screen with only an id (e.g. a deep link) and loads on
-    /// appear.
+    // For when we only have an id (e.g. a deep link) and need to load it.
     init(jobID: String, service: JobService) {
         self.jobID = jobID
         self.service = service

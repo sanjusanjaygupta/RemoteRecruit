@@ -2,8 +2,7 @@
 //  JobListViewModelTests.swift
 //  RemoteRecruitTests
 //
-//  Covers the business logic of the list screen: state transitions,
-//  search filtering by title and company, empty handling, and errors.
+//  Created by Sanjay Gupta on 05/06/26.
 //
 
 import XCTest
@@ -57,7 +56,7 @@ final class JobListViewModelTests: XCTestCase {
         let sut = JobListViewModel(service: StubJobService(behavior: .success(JobFixtures.sample)))
         await sut.loadJobs()
 
-        sut.searchText = "northwind"
+        sut.searchText = "northpay"
 
         XCTAssertEqual(sut.state.value?.map(\.id), ["2", "3"])
     }

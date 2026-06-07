@@ -2,20 +2,17 @@
 //  JobListViewModel.swift
 //  RemoteRecruit
 //
-//  Drives the job listing screen. Owns the full list of jobs, applies the
-//  search filter, and exposes a single `ViewState` the view renders from.
-//  Marked @MainActor so all published mutations happen on the main thread.
+//  Created by Sanjay Gupta on 03/06/26.
 //
 
 import Foundation
 
 @MainActor
 final class JobListViewModel: ObservableObject {
-    /// The state the list screen renders. The associated value is the
-    /// *filtered* list currently shown to the user.
+    // The state the list screen renders. Its value is the filtered list
+    // currently shown to the user.
     @Published private(set) var state: ViewState<[Job]> = .loading
 
-    /// Two-way bound to the search bar.
     @Published var searchText: String = "" {
         didSet { applyFilter() }
     }
@@ -27,8 +24,7 @@ final class JobListViewModel: ObservableObject {
         self.service = service
     }
 
-    /// Loads jobs from the service and updates `state`. Safe to call again
-    /// for pull-to-refresh / retry.
+    // Safe to call again for retry / pull-to-refresh.
     func loadJobs() async {
         state = .loading
         do {
@@ -39,8 +35,8 @@ final class JobListViewModel: ObservableObject {
         }
     }
 
-    /// Recomputes the visible list from `allJobs` + `searchText` without
-    /// re-hitting the service.
+    // Filter in memory so typing stays instant and we don't re-hit the
+    // service on every keystroke.
     private func applyFilter() {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 

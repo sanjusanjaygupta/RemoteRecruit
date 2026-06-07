@@ -2,14 +2,14 @@
 //  StubJobService.swift
 //  RemoteRecruitTests
 //
-//  A configurable test double implementing `JobService`. Lets each test
-//  control exactly what the view model receives: a fixed list, an empty
-//  list, or a thrown error.
+//  Created by Sanjay Gupta on 05/06/26.
 //
 
 import Foundation
 @testable import RemoteRecruit
 
+// Test double for JobService. Each test sets the behaviour it needs:
+// a fixed list, an empty list, or a thrown error.
 final class StubJobService: JobService {
     enum Behavior {
         case success([Job])
@@ -34,13 +34,11 @@ final class StubJobService: JobService {
     }
 }
 
-// MARK: - Fixtures
-
 enum JobFixtures {
     static func make(
         id: String = "1",
         title: String = "iOS Engineer",
-        companyName: String = "Aurora Labs"
+        companyName: String = "Finbox Technologies"
     ) -> Job {
         Job(
             id: id,
@@ -49,20 +47,20 @@ enum JobFixtures {
                 name: companyName,
                 about: "A great company.",
                 website: "https://example.com",
-                size: "51–200 employees"
+                size: "201–500 employees"
             ),
-            location: "Remote",
+            location: "Bengaluru, Karnataka",
             employmentType: "Full-time",
             isRemote: true,
-            salary: SalaryRange(min: 100000, max: 130000, currency: "USD", period: "year"),
+            salary: SalaryRange(min: 1200000, max: 2000000, currency: "INR", period: "year"),
             description: "Build great things.",
             postedAt: Date(timeIntervalSince1970: 0)
         )
     }
 
     static let sample: [Job] = [
-        make(id: "1", title: "Senior iOS Engineer", companyName: "Aurora Labs"),
-        make(id: "2", title: "Backend Engineer", companyName: "Northwind Bank"),
-        make(id: "3", title: "iOS Engineer, Payments", companyName: "Northwind Bank")
+        make(id: "1", title: "Senior iOS Engineer", companyName: "Finbox Technologies"),
+        make(id: "2", title: "Backend Engineer", companyName: "NorthPay Solutions"),
+        make(id: "3", title: "iOS Engineer, Payments", companyName: "NorthPay Solutions")
     ]
 }

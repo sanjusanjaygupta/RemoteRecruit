@@ -1,172 +1,133 @@
-# RemoteRecruit — Job Browser App
+# RemoteRecruit
 
-A small, production-quality iOS app for browsing, searching, and viewing job postings.
-Built as the **iOS Engineer Technical Examination**.
+A small iOS app for browsing, searching and viewing job postings. Built as the
+iOS Engineer technical assignment.
 
-| | |
-|---|---|
-| **Language** | Swift 5 |
-| **UI** | SwiftUI |
-| **Architecture** | MVVM + Dependency Injection |
-| **Concurrency** | `async/await` |
-| **Min iOS** | 17.0 |
-| **Data source** | Bundled JSON file (`jobs.json`) acting as a mock API |
-| **Tests** | XCTest — ViewModels, services, and models |
+## Tech
 
----
+- Swift 5, SwiftUI
+- MVVM
+- async/await for the async work
+- Dependency injection through a small container
+- Min iOS 17.0
+- Data comes from a bundled `jobs.json` file (acting as a mock API)
+- Unit tests with XCTest
 
 ## Features
 
-- **Job Listing** — title, company, location, and salary range for every job.
-- **Search** — filter jobs live by **title** or **company** (case-insensitive, whitespace-trimmed).
-- **Job Details** — full description, company information, salary range, and location.
-- **State handling** — explicit **loading**, **empty**, and **error** (with retry) states, plus pull-to-refresh.
+- **Job list** – title, company, location and salary range for each job.
+- **Search** – filter by job title or company name as you type.
+- **Job detail** – description, company info, salary and location.
+- **States** – loading, empty and error (with a retry button) are all handled,
+  plus pull to refresh on the list.
 
----
+## Getting started
 
-## Setup & Run
+You'll need Xcode 16 or newer with an iOS 17 simulator.
 
-### Requirements
-- macOS with **Xcode 16** or newer
-- iOS 17 Simulator (bundled with Xcode)
-
-### Run the app
 ```bash
-# 1. Open the project
-open RemoteRecruit/RemoteRecruit.xcodeproj
-
-# 2. Select the "RemoteRecruit" scheme and an iOS 17+ simulator
-# 3. Press Cmd-R
+open RemoteRecruit.xcodeproj
 ```
 
-### Run the tests
-From Xcode: **Product ▸ Test** (`Cmd-U`).
+Pick the `RemoteRecruit` scheme and a simulator, then run with Cmd-R.
 
-Or from the command line:
+To run the tests use Cmd-U, or from the terminal:
+
 ```bash
-cd RemoteRecruit
 xcodebuild test \
   -project RemoteRecruit.xcodeproj \
   -scheme RemoteRecruit \
   -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
-> Adjust the simulator name to one installed on your machine (`xcrun simctl list devices`).
 
----
+(Use any simulator you have installed - check with `xcrun simctl list devices`.)
 
 ## Architecture
 
-The app follows **MVVM** with a thin **dependency-injection container** as the composition root.
+It's a fairly standard MVVM setup:
 
-```
-┌──────────────┐     observes      ┌─────────────────┐     calls      ┌──────────────┐
-│    Views      │ ◀──────────────── │   ViewModels     │ ─────────────▶ │  JobService   │
-│  (SwiftUI)    │   @Published      │  (@MainActor)    │   async/await  │  (protocol)   │
-└──────────────┘     state         └─────────────────┘                └──────┬───────┘
-        ▲                                                                     │
-        │ builds via                                              ┌──────────┴──────────┐
-        │                                                          │  LocalJobService     │
-┌──────────────┐                                                  │  (jobs.json)         │
-│ AppContainer  │ ── injects service & makes view models ──▶      └─────────────────────┘
-│  (DI root)    │
-└──────────────┘
-```
+- **Models** (`Models/Job.swift`) – `Job`, `Company`, `SalaryRange` value types,
+  plus the salary/location display formatting.
+- **ViewState** (`Common/ViewState.swift`) – a generic enum with the four UI
+  states (loading / loaded / empty / failed). Each screen renders off one of
+  these, which keeps the views simple and avoids impossible states.
+- **Services** (`Services/`) – `JobService` is a protocol; `LocalJobService`
+  is the concrete one that reads and decodes `jobs.json`. The app depends on
+  the protocol, so the tests can pass in a stub instead.
+- **ViewModels** (`ViewModels/`) – the actual logic: fetching, filtering and
+  state transitions. Both are `@MainActor`.
+- **Views** (`Views/`) – SwiftUI screens, driven entirely by the view model
+  state. No logic lives here.
+- **AppContainer** (`DI/AppContainer.swift`) – the composition root. It holds
+  the service and builds the view models, so the wiring is all in one place.
 
-### Layers
+The flow is: the view asks the container for a view model, the view model calls
+the service, and the view renders whatever `ViewState` comes back.
 
-| Layer | Files | Responsibility |
-|---|---|---|
-| **Models** | `Models/Job.swift` | Immutable value types (`Job`, `Company`, `SalaryRange`) + display formatting. |
-| **Common** | `Common/ViewState.swift` | Generic `ViewState<Value>` enum modelling loading / loaded / empty / failed. |
-| **Services** | `Services/JobService.swift`, `Services/LocalJobService.swift` | Data access behind a protocol; concrete impl decodes the bundled JSON. |
-| **ViewModels** | `ViewModels/*` | Business logic: fetching, filtering, and state transitions. `@MainActor`. |
-| **Views** | `Views/*` | SwiftUI rendering, driven entirely by `ViewState`. No business logic. |
-| **DI** | `DI/AppContainer.swift` | Composition root: owns the service, builds view models. |
+Swapping the JSON file for a real network API later would mean adding one
+`URLSession`-based `JobService` and changing one line in `AppContainer` -
+nothing in the views or view models would need to change.
 
-### Key decisions
+## Tests
 
-- **Single source of UI truth.** Each screen renders from one `ViewState` enum, which makes
-  invalid combinations (e.g. "loading *and* error") unrepresentable and keeps the views declarative.
-- **Protocol-based service.** `JobService` is an abstraction; the app injects `LocalJobService`,
-  while tests inject a `StubJobService`. This is what makes the business logic unit-testable
-  without any network or file system.
-- **Dependency injection via a container.** Views never construct services. They ask `AppContainer`
-  for a ready-made view model, so the entire object graph can be swapped in one place (app, tests, previews).
-- **`@MainActor` view models.** All `@Published` mutations are guaranteed on the main thread;
-  `async/await` handles the off-main work inside the service.
-- **Search runs in memory.** The full list is fetched once and filtered locally, so typing is instant
-  and does not re-hit the data source.
+The business logic is covered by XCTest:
 
----
+- `JobListViewModelTests` – loading state, success, empty result, error +
+  message, search by title and by company, case-insensitive/trimmed search,
+  no-match, clearing the search, and retry after a failure.
+- `JobDetailViewModelTests` – seeding from a job vs. an id, reloading by id,
+  and a missing job.
+- `ModelAndServiceTests` – salary formatting (INR and others), location text,
+  JSON decoding and the service's not-found error.
 
-## Testing
+A `StubJobService` and a small `JobFixtures` helper keep the tests fast and
+predictable. Coverage on the view models / services / models is around 90%+,
+which is well past the 70% target. The lines that aren't covered are the
+SwiftUI view layout, which isn't really worth unit testing.
 
-Business logic is covered by `XCTest`:
-
-| Test file | Covers |
-|---|---|
-| `JobListViewModelTests` | Initial loading state, success → loaded, empty result, error + message, search by title, search by company, case-insensitivity/trimming, no-match → empty, clearing search, retry-after-failure. |
-| `JobDetailViewModelTests` | Seeding from a job vs. an id, reload-by-id, missing job → failed. |
-| `ModelAndServiceTests` | Salary/location formatting, JSON decoding, and the service's not-found error. |
-
-A `StubJobService` test double and `JobFixtures` factory keep the tests fast and deterministic.
-Coverage of the ViewModel/service business logic is **well above the 70% target** (those layers are
-exercised end-to-end; the only untested code is declarative SwiftUI layout).
-
-To see coverage in Xcode: **Product ▸ Scheme ▸ Edit Scheme ▸ Test ▸ Options ▸ Code Coverage**, then `Cmd-U`.
-
----
+To see the numbers: Product > Scheme > Edit Scheme > Test > Options > Code
+Coverage, then run Cmd-U.
 
 ## Assumptions
 
-1. **Mock API via bundled JSON.** The brief allows a local JSON file; `LocalJobService` reads
-   `jobs.json` from the app bundle and decodes it, simulating a networked API (including a short
-   artificial delay so the loading state is visible). Swapping in a real `URLSession`-backed service
-   later means adding one type and changing one line in `AppContainer` — no view or view-model changes.
-2. **Search scope.** Per the brief, search matches **title** and **company** only (not description/location).
-3. **Detail data is already loaded.** Tapping a row passes the full `Job` straight to the detail screen,
-   so it renders instantly. A `reload(by:id)` path is also included to support deep links / refresh.
-4. **iOS 17+.** Uses `ContentUnavailableView` and `.searchable`, keeping the UI code minimal and modern.
-5. **No persistence / pagination / favouriting.** These were out of scope for the exam.
+- **Mock data.** The brief allows a local JSON file, so `LocalJobService` reads
+  `jobs.json` from the app bundle. There's a small artificial delay in there on
+  purpose so the loading spinner is actually visible.
+- **Indian Rupees.** Salaries are shown in INR (₹) using the Indian
+  lakh/crore grouping, e.g. ₹12,00,000. The formatter picks the grouping from
+  the currency, so other currencies (USD/GBP/EUR) still format the normal way.
+- **Search.** Matches title and company only, as listed in the brief.
+- **Detail data.** Tapping a row hands the full job straight to the detail
+  screen so it shows instantly. There's also a reload-by-id path for things
+  like deep links.
+- **iOS 17+.** Uses `ContentUnavailableView` and `.searchable` to keep the UI
+  code small.
+- Out of scope: persistence, pagination, saved jobs, login.
 
----
-
-## Project structure
+## Project layout
 
 ```
 RemoteRecruit/
-├── README.md
-├── .gitignore
-├── RemoteRecruit.xcodeproj
-└── RemoteRecruit/
-    ├── RemoteRecruitApp.swift        # @main entry point + DI wiring
-    ├── Common/ViewState.swift
-    ├── Models/Job.swift
-    ├── Services/
-    │   ├── JobService.swift           # protocol
-    │   └── LocalJobService.swift      # JSON-backed implementation
-    ├── ViewModels/
-    │   ├── JobListViewModel.swift
-    │   └── JobDetailViewModel.swift
-    ├── Views/
-    │   ├── JobListView.swift
-    │   ├── JobRowView.swift
-    │   ├── JobDetailView.swift
-    │   └── StateViews.swift           # loading / empty / error
-    ├── DI/AppContainer.swift
-    ├── Resources/jobs.json            # mock data
-    └── Assets.xcassets
-└── RemoteRecruitTests/
-    ├── StubJobService.swift           # test double + fixtures
-    ├── JobListViewModelTests.swift
-    ├── JobDetailViewModelTests.swift
-    └── ModelAndServiceTests.swift
+  RemoteRecruitApp.swift      app entry + DI wiring
+  Common/ViewState.swift
+  Models/Job.swift
+  Services/
+    JobService.swift          protocol
+    LocalJobService.swift     reads jobs.json
+  ViewModels/
+    JobListViewModel.swift
+    JobDetailViewModel.swift
+  Views/
+    JobListView.swift
+    JobRowView.swift
+    JobDetailView.swift
+    StateViews.swift          loading / empty / error
+  DI/AppContainer.swift
+  Resources/jobs.json
+  Assets.xcassets
+RemoteRecruitTests/
+  StubJobService.swift        test double + fixtures
+  JobListViewModelTests.swift
+  JobDetailViewModelTests.swift
+  ModelAndServiceTests.swift
 ```
-
----
-
-## Optional: TestFlight
-
-Not included by default. To distribute:
-1. Set a unique `PRODUCT_BUNDLE_IDENTIFIER` and your team in **Signing & Capabilities**.
-2. **Product ▸ Archive**, then upload to App Store Connect and add the build to TestFlight.

@@ -2,14 +2,11 @@
 //  JobService.swift
 //  RemoteRecruit
 //
-//  The service abstraction used by the view models. Depending on an
-//  abstraction (not a concrete type) is what makes the view models
-//  testable: tests inject a stub, the app injects the JSON-backed service.
+//  Created by Sanjay Gupta on 02/06/26.
 //
 
 import Foundation
 
-/// Errors surfaced by a `JobService`.
 enum JobServiceError: LocalizedError, Equatable {
     case notFound
     case decodingFailed
@@ -27,19 +24,16 @@ enum JobServiceError: LocalizedError, Equatable {
     }
 }
 
-/// Provides access to job postings. Implementations may hit a network API,
-/// a mock server, or a bundled JSON file.
+// View models talk to this protocol, not a concrete type. That's what lets
+// the tests swap in a stub instead of hitting the real data source.
 protocol JobService {
-    /// Returns all available jobs.
     func fetchJobs() async throws -> [Job]
-
-    /// Returns a single job by id, or throws `.notFound`.
     func fetchJob(id: String) async throws -> Job
 }
 
 extension JobService {
-    /// Default detail lookup built on top of `fetchJobs()`. Concrete
-    /// implementations can override this for a more efficient query.
+    // Default detail lookup built on fetchJobs(). A real networked service
+    // could override this with a dedicated endpoint.
     func fetchJob(id: String) async throws -> Job {
         guard let job = try await fetchJobs().first(where: { $0.id == id }) else {
             throw JobServiceError.notFound

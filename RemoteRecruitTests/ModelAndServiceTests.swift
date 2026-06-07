@@ -2,8 +2,7 @@
 //  ModelAndServiceTests.swift
 //  RemoteRecruitTests
 //
-//  Covers value-type formatting logic and JSON decoding via a service
-//  pointed at the test bundle.
+//  Created by Sanjay Gupta on 06/06/26.
 //
 
 import XCTest
@@ -11,31 +10,36 @@ import XCTest
 
 final class ModelAndServiceTests: XCTestCase {
 
-    func testSalaryDisplayFormatsYearlyUSD() {
+    func testSalaryDisplayFormatsINRWithIndianGrouping() {
+        let salary = SalaryRange(min: 1200000, max: 2500000, currency: "INR", period: "year")
+        XCTAssertEqual(salary.display, "₹12,00,000 – ₹25,00,000 / year")
+    }
+
+    func testSalaryDisplayFormatsHourlyINR() {
+        let hourly = SalaryRange(min: 1800, max: 2800, currency: "INR", period: "hour")
+        XCTAssertEqual(hourly.display, "₹1,800 – ₹2,800 / hour")
+    }
+
+    func testSalaryDisplayFormatsNonIndianCurrency() {
         let salary = SalaryRange(min: 120000, max: 150000, currency: "USD", period: "year")
         XCTAssertEqual(salary.display, "$120,000 – $150,000 / year")
     }
 
-    func testSalaryDisplayFormatsHourlyAndGBP() {
-        let hourly = SalaryRange(min: 80, max: 110, currency: "GBP", period: "hour")
-        XCTAssertEqual(hourly.display, "£80 – £110 / hour")
-    }
-
     func testLocationDisplayAppendsRemote() {
         let remote = JobFixtures.make()
-        XCTAssertEqual(remote.locationDisplay, "Remote · Remote")
+        XCTAssertEqual(remote.locationDisplay, "Bengaluru, Karnataka · Remote")
     }
 
-    func testDecodingFromJSON() async throws {
+    func testDecodingFromJSON() throws {
         let json = """
         [{
           "id": "1",
           "title": "iOS Engineer",
-          "company": { "name": "Aurora", "about": "x", "website": "https://a.com", "size": "small" },
-          "location": "Remote",
+          "company": { "name": "Finbox", "about": "x", "website": "https://a.com", "size": "small" },
+          "location": "Bengaluru",
           "employmentType": "Full-time",
           "isRemote": true,
-          "salary": { "min": 100000, "max": 120000, "currency": "USD", "period": "year" },
+          "salary": { "min": 1200000, "max": 2000000, "currency": "INR", "period": "year" },
           "description": "Build things.",
           "postedAt": "2026-05-21T09:00:00Z"
         }]
@@ -45,7 +49,8 @@ final class ModelAndServiceTests: XCTestCase {
         let jobs = try decoder.decode([Job].self, from: Data(json.utf8))
 
         XCTAssertEqual(jobs.count, 1)
-        XCTAssertEqual(jobs.first?.company.name, "Aurora")
+        XCTAssertEqual(jobs.first?.company.name, "Finbox")
+        XCTAssertEqual(jobs.first?.salary.currency, "INR")
     }
 
     func testLocalServiceThrowsNotFoundForMissingFile() async {

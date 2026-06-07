@@ -2,8 +2,7 @@
 //  StateViews.swift
 //  RemoteRecruit
 //
-//  Small reusable views for the non-content UI states: loading, empty,
-//  and error. Centralising them keeps the screen code focused on layout.
+//  Created by Sanjay Gupta on 04/06/26.
 //
 
 import SwiftUI
