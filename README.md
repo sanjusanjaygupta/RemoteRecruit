@@ -1,133 +1,80 @@
 # RemoteRecruit
 
-A small iOS app for browsing, searching and viewing job postings. Built as the
-iOS Engineer technical assignment.
+A simple job browser app I built for the iOS engineer assignment. You can see a
+list of jobs, search them, and open a job to see the full details.
 
-## Tech
+## Built with
 
-- Swift 5, SwiftUI
+- Swift 5 + SwiftUI
 - MVVM
-- async/await for the async work
-- Dependency injection through a small container
-- Min iOS 17.0
-- Data comes from a bundled `jobs.json` file (acting as a mock API)
-- Unit tests with XCTest
+- async/await
+- Min iOS 17
 
-## Features
+The data comes from a local `jobs.json` file in the app bundle instead of a real
+backend (the assignment allowed a mock source).
 
-- **Job list** – title, company, location and salary range for each job.
-- **Search** – filter by job title or company name as you type.
-- **Job detail** – description, company info, salary and location.
-- **States** – loading, empty and error (with a retry button) are all handled,
-  plus pull to refresh on the list.
+## How to run
 
-## Getting started
+Open `RemoteRecruit.xcodeproj` in Xcode 16, pick a simulator and hit Run (Cmd+R).
 
-You'll need Xcode 16 or newer with an iOS 17 simulator.
+For the tests, use Cmd+U. Or from terminal:
 
-```bash
-open RemoteRecruit.xcodeproj
 ```
-
-Pick the `RemoteRecruit` scheme and a simulator, then run with Cmd-R.
-
-To run the tests use Cmd-U, or from the terminal:
-
-```bash
-xcodebuild test \
-  -project RemoteRecruit.xcodeproj \
-  -scheme RemoteRecruit \
+xcodebuild test -project RemoteRecruit.xcodeproj -scheme RemoteRecruit \
   -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
-(Use any simulator you have installed - check with `xcrun simctl list devices`.)
+## What it does
 
-## Architecture
+- List of jobs with title, company, location and salary
+- Search by job title or company name
+- Job detail screen with description, company info, salary and location
+- Handles loading, empty and error states (error has a retry button)
+- Pull to refresh on the list
 
-It's a fairly standard MVVM setup:
+## How it's structured
 
-- **Models** (`Models/Job.swift`) – `Job`, `Company`, `SalaryRange` value types,
-  plus the salary/location display formatting.
-- **ViewState** (`Common/ViewState.swift`) – a generic enum with the four UI
-  states (loading / loaded / empty / failed). Each screen renders off one of
-  these, which keeps the views simple and avoids impossible states.
-- **Services** (`Services/`) – `JobService` is a protocol; `LocalJobService`
-  is the concrete one that reads and decodes `jobs.json`. The app depends on
-  the protocol, so the tests can pass in a stub instead.
-- **ViewModels** (`ViewModels/`) – the actual logic: fetching, filtering and
-  state transitions. Both are `@MainActor`.
-- **Views** (`Views/`) – SwiftUI screens, driven entirely by the view model
-  state. No logic lives here.
-- **AppContainer** (`DI/AppContainer.swift`) – the composition root. It holds
-  the service and builds the view models, so the wiring is all in one place.
+Pretty standard MVVM.
 
-The flow is: the view asks the container for a view model, the view model calls
-the service, and the view renders whatever `ViewState` comes back.
+- `Models/Job.swift` - the Job/Company/SalaryRange types and the salary
+  formatting
+- `Common/ViewState.swift` - small enum for the screen state (loading, loaded,
+  empty, failed). Each screen just renders based on this.
+- `Services/JobService.swift` - a protocol for fetching jobs.
+  `LocalJobService` is the real one that reads jobs.json. Using a protocol here
+  is what lets the tests inject a fake instead of touching the real file.
+- `ViewModels/` - the logic. They fetch from the service, do the search
+  filtering and set the state. Both are @MainActor.
+- `Views/` - the SwiftUI screens. No logic in here, they just draw the state.
+- `DI/AppContainer.swift` - creates the service and builds the view models, so
+  all the wiring is in one place.
 
-Swapping the JSON file for a real network API later would mean adding one
-`URLSession`-based `JobService` and changing one line in `AppContainer` -
-nothing in the views or view models would need to change.
+Flow is basically: View -> ViewModel -> Service, and the View redraws from
+whatever state the ViewModel publishes.
+
+If I wanted to use a real API later I'd just add a new JobService that uses
+URLSession and swap it in AppContainer. The views and view models wouldn't
+change.
 
 ## Tests
 
-The business logic is covered by XCTest:
+Tests are in `RemoteRecruitTests`. They cover the view models and the
+service/model logic - loading, search by title and company, empty results,
+errors and retry, salary formatting, and JSON decoding. There's a StubJobService
+so the tests don't depend on the real data.
 
-- `JobListViewModelTests` – loading state, success, empty result, error +
-  message, search by title and by company, case-insensitive/trimmed search,
-  no-match, clearing the search, and retry after a failure.
-- `JobDetailViewModelTests` – seeding from a job vs. an id, reloading by id,
-  and a missing job.
-- `ModelAndServiceTests` – salary formatting (INR and others), location text,
-  JSON decoding and the service's not-found error.
+Coverage on the view model / service / model code is around 90%, which is above
+the 70% asked for. I didn't write tests for the SwiftUI views themselves since
+that's just layout.
 
-A `StubJobService` and a small `JobFixtures` helper keep the tests fast and
-predictable. Coverage on the view models / services / models is around 90%+,
-which is well past the 70% target. The lines that aren't covered are the
-SwiftUI view layout, which isn't really worth unit testing.
+## Notes / assumptions
 
-To see the numbers: Product > Scheme > Edit Scheme > Test > Options > Code
-Coverage, then run Cmd-U.
-
-## Assumptions
-
-- **Mock data.** The brief allows a local JSON file, so `LocalJobService` reads
-  `jobs.json` from the app bundle. There's a small artificial delay in there on
-  purpose so the loading spinner is actually visible.
-- **Indian Rupees.** Salaries are shown in INR (₹) using the Indian
-  lakh/crore grouping, e.g. ₹12,00,000. The formatter picks the grouping from
-  the currency, so other currencies (USD/GBP/EUR) still format the normal way.
-- **Search.** Matches title and company only, as listed in the brief.
-- **Detail data.** Tapping a row hands the full job straight to the detail
-  screen so it shows instantly. There's also a reload-by-id path for things
-  like deep links.
-- **iOS 17+.** Uses `ContentUnavailableView` and `.searchable` to keep the UI
-  code small.
-- Out of scope: persistence, pagination, saved jobs, login.
-
-## Project layout
-
-```
-RemoteRecruit/
-  RemoteRecruitApp.swift      app entry + DI wiring
-  Common/ViewState.swift
-  Models/Job.swift
-  Services/
-    JobService.swift          protocol
-    LocalJobService.swift     reads jobs.json
-  ViewModels/
-    JobListViewModel.swift
-    JobDetailViewModel.swift
-  Views/
-    JobListView.swift
-    JobRowView.swift
-    JobDetailView.swift
-    StateViews.swift          loading / empty / error
-  DI/AppContainer.swift
-  Resources/jobs.json
-  Assets.xcassets
-RemoteRecruitTests/
-  StubJobService.swift        test double + fixtures
-  JobListViewModelTests.swift
-  JobDetailViewModelTests.swift
-  ModelAndServiceTests.swift
-```
+- Salaries are shown in Indian Rupees (₹) with the lakh format like
+  ₹12,00,000. The formatter picks the grouping from the currency so it's not
+  hardcoded.
+- Search only looks at title and company, like the assignment said.
+- There's a small fake delay in LocalJobService so the loading spinner is
+  actually visible.
+- Tapping a job passes the job straight to the detail screen so it opens
+  instantly. There's also a load-by-id path in case it's needed later.
+- No login, pagination or saved jobs - kept it to what was asked.
